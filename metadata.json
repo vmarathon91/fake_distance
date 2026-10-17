@@ -1,0 +1,6 @@
+{
+  "name": "Check-in Statistics",
+  "description": "Marathon check-in statistics interface recreating the exact mobile UI from vm.vnexpress.net.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
