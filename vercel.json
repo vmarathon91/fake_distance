@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/racekit-stats",
+      "destination": "/api/racekit-stats"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
