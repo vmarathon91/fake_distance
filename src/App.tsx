@@ -44,13 +44,17 @@ function parseRacekitData(apiItems: ApiRacekitItem[], fakeOffsets: Record<string
     // Parse distance from "5KM ", "10KM ", etc. (ignore TEN GIAI and ID GIAI as requested)
     const rawCuLy = (item["CU LY"] || "").toUpperCase().replace(/[^0-9]/g, '').trim();
     if (rawCuLy) {
-      const checkedIn = parseInt(String(item["CHECKIN"] || 0).replace(/,/g, ''), 10) || 0;
+      const baseCheckedIn = parseInt(String(item["CHECKIN"] || 0).replace(/,/g, ''), 10) || 0;
       const baseNotCheckedIn = parseInt(String(item["NOT CHECKIN"] || 0).replace(/,/g, ''), 10) || 0;
+      const rawTotal = parseInt(String(item["TONG SO"] || 0).replace(/,/g, ''), 10) || (baseCheckedIn + baseNotCheckedIn);
       
-      // Cộng số lượng theo từng cự ly ở trang admin vào số Not Checked-in
+      // 1/ Số fake cộng vào Checked-in
       const fakeBonus = Number(fakeOffsets[rawCuLy]) || 0;
-      const notCheckedIn = baseNotCheckedIn + fakeBonus;
-      const total = checkedIn + notCheckedIn;
+      const checkedIn = baseCheckedIn + fakeBonus;
+      // 2/ Not Checked-in - số fake
+      const notCheckedIn = Math.max(0, baseNotCheckedIn - fakeBonus);
+      // 3/ Số Total phải giữ nguyên từ giá trị API trả về không thay đổi
+      const total = rawTotal;
 
       mapped[rawCuLy] = {
         distance: rawCuLy,
@@ -109,8 +113,8 @@ export default function App() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'O_ID' | 'BIB' | 'TÊN' | 'EMAIL' | 'CCCD' | 'PHONE'>('BIB');
-  const [searchValue, setSearchValue] = useState('Nguyễn Văn Tiến');
+  const [activeTab, setActiveTab] = useState<'O_ID' | 'BIB' | 'TÊN' | 'EMAIL' | 'CCCD' | 'PHONE'>('TÊN');
+  const [searchValue, setSearchValue] = useState('');
   const [vpimCode, setVpimCode] = useState('VPIM2026');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const numberWeight = '300';
@@ -153,7 +157,17 @@ export default function App() {
         setStats(parsed);
         setIsReady(true);
       } catch (fallbackErr) {
-        setStats(defaultStatsData);
+        const fallbackDistances: DistanceStat[] = [
+          { distance: '5', checkedIn: 1446 + (fakeOffsets['5'] || 0), notCheckedIn: Math.max(0, 1308 - (fakeOffsets['5'] || 0)), total: 2754 },
+          { distance: '10', checkedIn: 1279 + (fakeOffsets['10'] || 0), notCheckedIn: Math.max(0, 1674 - (fakeOffsets['10'] || 0)), total: 2953 },
+          { distance: '21', checkedIn: 1314 + (fakeOffsets['21'] || 0), notCheckedIn: Math.max(0, 1747 - (fakeOffsets['21'] || 0)), total: 3061 },
+          { distance: '42', checkedIn: 1048 + (fakeOffsets['42'] || 0), notCheckedIn: Math.max(0, 994 - (fakeOffsets['42'] || 0)), total: 2042 },
+        ];
+        const totChk = fallbackDistances.reduce((s, i) => s + i.checkedIn, 0);
+        const totNot = fallbackDistances.reduce((s, i) => s + i.notCheckedIn, 0);
+        const grand = fallbackDistances.reduce((s, i) => s + i.total, 0);
+        fallbackDistances.push({ distance: 'Total', checkedIn: totChk, notCheckedIn: totNot, total: grand, isTotal: true });
+        setStats(fallbackDistances);
         setIsReady(true);
       }
     } finally {
@@ -333,7 +347,7 @@ export default function App() {
                   <div className="w-full py-20 flex flex-col items-center justify-center gap-3">
                     <RefreshCw className="w-7 h-7 animate-spin text-[#3545A2]" />
                     <span className="font-condensed font-medium text-[16px] text-[#4B5563] tracking-wide">
-                      Đang đồng bộ số liệu và tính toán cự ly...
+                      Loading...
                     </span>
                   </div>
                 ) : (

@@ -65,26 +65,43 @@ app.get('/api/racekit-stats', async (req, res) => {
       });
     }
 
-    // 3. Tiến hành bóc tách và cộng số fake vào Not Checked-in TRƯỚC KHI trả ra FE
+    // 3. Tiến hành bóc tách và tính toán theo 3 quy tắc:
+    // 1/ Số fake cộng vào Checked-in
+    // 2/ Not Checked-in trừ số fake
+    // 3/ Số Total giữ nguyên từ giá trị API trả về không thay đổi
     const distanceOrder = ['5', '10', '21', '42'];
     const mapped: Record<string, { distance: string; checkedIn: number; notCheckedIn: number; total: number }> = {};
+    const baseStats: Record<string, { distance: string; checkedIn: number; notCheckedIn: number; total: number }> = {};
 
     apiData.forEach((item: any) => {
       const rawCuLy = String(item['CU LY'] || '').toUpperCase().replace(/[^0-9]/g, '').trim();
       if (rawCuLy) {
-        const checkedIn = parseInt(String(item['CHECKIN'] || 0).replace(/,/g, ''), 10) || 0;
+        const baseCheckedIn = parseInt(String(item['CHECKIN'] || 0).replace(/,/g, ''), 10) || 0;
         const baseNotCheckedIn = parseInt(String(item['NOT CHECKIN'] || 0).replace(/,/g, ''), 10) || 0;
+        const rawTotal = parseInt(String(item['TONG SO'] || 0).replace(/,/g, ''), 10) || (baseCheckedIn + baseNotCheckedIn);
         
-        // Cộng số fake tương ứng vào Not Checked-in
-        const fakeBonus = fakeOffsets[rawCuLy] || 0;
-        const notCheckedIn = baseNotCheckedIn + fakeBonus;
-        const total = checkedIn + notCheckedIn;
+        // 1/ Số fake cộng vào Checked-in
+        const fakeBonus = Number(fakeOffsets[rawCuLy]) || 0;
+        const checkedIn = baseCheckedIn + fakeBonus;
+
+        // 2/ Not Checked-in - số fake
+        const notCheckedIn = Math.max(0, baseNotCheckedIn - fakeBonus);
+
+        // 3/ Số Total giữ nguyên từ giá trị API trả về không thay đổi
+        const total = rawTotal;
 
         mapped[rawCuLy] = {
           distance: rawCuLy,
           checkedIn,
           notCheckedIn,
           total
+        };
+
+        baseStats[rawCuLy] = {
+          distance: rawCuLy,
+          checkedIn: baseCheckedIn,
+          notCheckedIn: baseNotCheckedIn,
+          total: rawTotal
         };
       }
     });
@@ -118,6 +135,7 @@ app.get('/api/racekit-stats', async (req, res) => {
     return res.json({
       success: true,
       data: finalResult,
+      baseStats,
       fakeOffsets,
       updatedAt: new Date().toLocaleTimeString('vi-VN')
     });
