@@ -1,16 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
-  Smartphone, 
-  Monitor, 
-  ArrowDown, 
-  ArrowUp,
   QrCode,
-  Layers,
-  ZoomIn,
-  Database,
-  RefreshCw,
-  Radio
+  RefreshCw
 } from 'lucide-react';
 
 import AdminPage from './components/AdminPage';
@@ -121,9 +113,7 @@ export default function App() {
   const [searchValue, setSearchValue] = useState('Nguyễn Văn Tiến');
   const [vpimCode, setVpimCode] = useState('VPIM2026');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [viewState, setViewState] = useState<'both' | 'top' | 'bottom'>('both');
-  const [phoneFrame, setPhoneFrame] = useState(true);
-  const [numberWeight, setNumberWeight] = useState<'300' | '200' | '400'>('300');
+  const numberWeight = '300';
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -199,15 +189,7 @@ export default function App() {
     }
   };
 
-  const handleScrollToTop = () => {
-    setViewState('top');
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
   const handleScrollToBottom = () => {
-    setViewState('bottom');
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({ 
         top: scrollContainerRef.current.scrollHeight, 
@@ -216,163 +198,21 @@ export default function App() {
     }
   };
 
-  const handleResetScroll = () => {
-    setViewState('both');
-  };
-
   if (currentPath === '/admin') {
     return <AdminPage onBackToHome={() => navigateTo('/')} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#ECEFF1] text-[#222222] flex flex-col items-center">
-      {/* Reviewer Toolbar */}
-      <header className="w-full bg-white border-b border-gray-200 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-xs sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-          <span className="font-semibold text-sm text-gray-800">
-            Giao diện Thống kê Check-in (Chuẩn theo 2 Ảnh chụp)
-          </span>
-          <span className="text-xs text-gray-400 hidden sm:inline">|</span>
-          <span className="text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-mono hidden sm:inline">
-            vm.vnexpress.net
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs">
-          {/* Live API sync status */}
-          <button
-            onClick={fetchLiveStats}
-            disabled={isLoadingApi}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors shadow-2xs"
-            title={`API vm.vnexpress.net (Cập nhật lúc: ${lastUpdated || 'Đang tải...'})`}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isLoadingApi ? 'animate-spin' : ''}`} />
-            <span className="font-semibold">Live API</span>
-            {lastUpdated && <span className="text-[10px] text-emerald-700 font-mono hidden sm:inline">{lastUpdated}</span>}
-          </button>
-
-          {/* Direct link to /admin */}
-          <button
-            onClick={() => navigateTo('/admin')}
-            className="px-2.5 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-white font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
-            title="Mở trang nhập số lượng fake (/admin)"
-          >
-            <Database className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Trang /admin</span>
-          </button>
-          {/* Scroll view shortcuts */}
-          <div className="flex items-center bg-gray-100 p-0.5 rounded border border-gray-200">
-            <button
-              onClick={handleScrollToTop}
-              className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium transition-all ${
-                viewState === 'top' 
-                  ? 'bg-white shadow-xs text-blue-700' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Xem trạng thái Ảnh số 2 (Đầu trang)"
-            >
-              <ArrowUp className="w-3.5 h-3.5 text-blue-600" />
-              <span>Ảnh 2 (Đầu trang)</span>
-            </button>
-
-            <button
-              onClick={handleScrollToBottom}
-              className={`px-2.5 py-1 rounded flex items-center gap-1 font-medium transition-all ${
-                viewState === 'bottom' 
-                  ? 'bg-white shadow-xs text-red-700' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Xem trạng thái Ảnh số 1 (Cuối trang)"
-            >
-              <ArrowDown className="w-3.5 h-3.5 text-red-600" />
-              <span>Ảnh 1 (Cuối trang)</span>
-            </button>
-
-            <button
-              onClick={handleResetScroll}
-              className={`px-2 py-1 rounded transition-all ${
-                viewState === 'both' 
-                  ? 'bg-white shadow-xs text-gray-900 font-semibold' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              title="Cuộn tự do toàn trang"
-            >
-              <span>Tất cả</span>
-            </button>
-          </div>
-
-          {/* Line weight selector for numbers */}
-          <div className="hidden sm:flex items-center bg-gray-100 p-0.5 rounded border border-gray-200">
-            <span className="text-[11px] text-gray-500 px-1.5 font-medium">Nét số:</span>
-            <button
-              onClick={() => setNumberWeight('200')}
-              className={`px-2 py-1 rounded text-xs transition-all ${
-                numberWeight === '200' 
-                  ? 'bg-white shadow-xs text-blue-700 font-bold' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Nét siêu mảnh (200)"
-            >
-              Rất mảnh
-            </button>
-            <button
-              onClick={() => setNumberWeight('300')}
-              className={`px-2 py-1 rounded text-xs transition-all ${
-                numberWeight === '300' 
-                  ? 'bg-white shadow-xs text-blue-700 font-bold' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Nét mảnh vừa (300 - Mặc định)"
-            >
-              Mảnh (Chuẩn)
-            </button>
-            <button
-              onClick={() => setNumberWeight('400')}
-              className={`px-2 py-1 rounded text-xs transition-all ${
-                numberWeight === '400' 
-                  ? 'bg-white shadow-xs text-blue-700 font-bold' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Nét thường (400)"
-            >
-              Đậm hơn
-            </button>
-          </div>
-
-          {/* Toggle Phone Frame */}
-          <button
-            onClick={() => setPhoneFrame(!phoneFrame)}
-            className={`px-2.5 py-1.5 rounded border flex items-center gap-1 font-medium transition-colors ${
-              phoneFrame 
-                ? 'bg-white border-gray-300 text-gray-700 shadow-2xs' 
-                : 'bg-gray-100 border-gray-200 text-gray-600'
-            }`}
-            title="Bật/tắt khung điện thoại iPhone"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-gray-600" />
-            <span className="hidden sm:inline">Khung iPhone (390px)</span>
-          </button>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#ECEFF1] text-[#222222] flex flex-col items-center justify-start">
       {/* Main Container */}
-      <main className="w-full flex-1 flex justify-center p-0 md:p-6 items-start">
-        <div className={`w-full transition-all duration-200 flex justify-center ${
-          phoneFrame ? 'max-w-[420px]' : 'max-w-2xl'
-        }`}>
-
+      <main className="w-full flex-1 flex justify-center p-0 md:py-6 items-start">
+        <div className="w-full transition-all duration-200 flex justify-center max-w-[420px]">
           {/* Screen Wrapper */}
-          <div className={`w-full bg-white relative ${
-            phoneFrame 
-              ? 'md:rounded-2xl md:shadow-2xl md:border md:border-gray-300 overflow-hidden' 
-              : 'shadow-md border border-gray-200'
-          }`}>
-            
+          <div className="w-full bg-white relative md:rounded-2xl md:shadow-2xl md:border md:border-gray-300 overflow-hidden">
             {/* Scrollable Viewport */}
             <div 
               ref={scrollContainerRef}
-              className="w-full h-[780px] max-h-[85vh] overflow-y-auto flex flex-col bg-white relative scroll-smooth"
+              className="w-full h-screen md:h-[844px] md:max-h-[92vh] overflow-y-auto flex flex-col bg-white relative scroll-smooth"
               style={{
                 scrollbarWidth: 'thin',
               }}
